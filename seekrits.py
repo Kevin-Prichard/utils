@@ -10,15 +10,37 @@ from typing import List
 from configparser_crypt import ConfigParserCrypt
 
 
+USAGE_NOTES = """NOTE: in all cases where --file exists on filesystem, the script expects a
+      32-byte AES passphrase that is encoded with the base64.standard_b64encode charset.
+
+      For a new --file, a random key is generated and sent to /dev/stdout
+
+Common use patterns:
+
+# Import a plaintext config file to a new encrypted config file
+% seekrits.py --import <myconfig.conf> --file <mysecrets.conf.enc>
+
+# Set or change a key-value pair, in a SECTION of a new or existing encrypted config file 
+% seekrits.py --file <mysecrets.conf.enc> -s <SECTION> -k <config_key> -w <new_value>
+
+# Read a key's value, from a SECTION, of an existing encrypted config file, output to console
+% seekrits.py --file <mysecrets.conf.enc> -s <SECTION> -k <config_key>
+
+# Export an encrypted config file to a plaintext file, or /dev/std[out|err]
+% seekrits.py --file <mysecrets.conf.enc> --export /dev/stdout
+"""
+
+
 def get_args(argv: List[str]) -> Namespace:
     parser = ArgumentParser(prog='Seekrits',
-                            description = 'Secrets reader & writer')
+                            description = 'Secrets config file reader & writer')
     parser.add_argument('--file', '-f', dest='file', type=str, action='store')
     parser.add_argument('--import', '-i', dest='import_file', type=str, action='store')
     parser.add_argument('--export', '-x', dest='export_file', type=str, action='store')
     parser.add_argument('--section', '-s', dest='section', type=str, action='store', default='DEFAULT')
     parser.add_argument('--key', '-k', dest='key', action='store', type=str)
     parser.add_argument('--write', '-w', dest='write', action='store', type=str, nargs='?')
+    parser.add_argument('--use', '-u', dest='usage', action='store', const=1, nargs='?')
     return parser.parse_args(argv)
 
 
@@ -105,12 +127,17 @@ def decrypt_config_file(source_file, export_file):
 
 def main(argv):
     args = get_args(argv)
+    if args.usage:
+        sys.stderr.write(USAGE_NOTES)
+        exit(1)
+
     if args.import_file and args.file:
         if args.import_file == args.file:
             raise ValueError(f"Import and output filenames cannot be the same!")
         elif not(os.path.exists(args.import_file) and not os.path.exists(args.file)):
             raise ValueError(f"Import file must exist, and output file must not exist!")
         encrypt_config_file(args.import_file, args.file)
+
     if args.file and args.export_file:
         if args.file == args.export_file:
             raise ValueError(f"Source and export filenames cannot be the same!")
