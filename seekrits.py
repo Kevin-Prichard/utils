@@ -14,6 +14,7 @@ def get_args(argv: List[str]) -> Namespace:
     parser = ArgumentParser(prog='Seekrits',
                             description = 'Secrets reader & writer')
     parser.add_argument('--file', '-f', dest='file', type=str, action='store')
+    parser.add_argument('--import', '-i', dest='import_file', type=str, action='store')
     parser.add_argument('--section', '-s', dest='section', type=str, action='store', default='DEFAULT')
     parser.add_argument('--key', '-k', dest='key', action='store', type=str)
     parser.add_argument('--write', '-w', dest='write', action='store', type=str, nargs='?')
@@ -24,11 +25,12 @@ def read_section_key(conf: ConfigParserCrypt, key: str):
     return conf
 
 
-def get_config(args: Namespace) -> ConfigParserCrypt:
+def get_config(source_file) -> ConfigParserCrypt:
     config = ConfigParserCrypt()
     passphrase = None
-    if not os.path.isfile(args.file):
+    if not os.path.isfile(source_file):
         passphrase = config.generate_key()
+        import pudb; pu.db
         print(f"Passphrase for new config file: '{base64.standard_b64encode(passphrase)}'.  "
               "Copy the passphrase, then use 'reset' to clear the terminal.")
         config.aes_key = passphrase
@@ -42,8 +44,8 @@ def get_config(args: Namespace) -> ConfigParserCrypt:
             passphrase = base64.standard_b64decode(passph)
         config.aes_key = passphrase
 
-    if os.path.isfile(args.file):
-        config.read_encrypted(args.file)
+    if os.path.isfile(source_file):
+        config.read_encrypted(source_file)
 
     return config
 
@@ -52,7 +54,6 @@ def write_key_value(config, file, section, key, value):
     if section not in config:
         config.add_section(section)
     config[section][key] = value
-    # print(f"{section}.{args.key} set.")
     with open(file, "wb") as fp:
         config.write_encrypted(fp, space_around_delimiters=False)
     if not os.path.isfile(file) or not os.path.getsize(file):
@@ -70,19 +71,50 @@ def read_key_value(config, file, section, key):
     print(config[section][key])
 
 
+def encrypt_config_file(import_file, output_file):
+    source = ConfigParserCrypt()
+    dest = get_config(output_file)
+
+    with open(import_file, "r") as fh:
+        source.read_string("[DEFAULT]\n" + fh.read())
+
+    sections = 0
+    key_values = 0
+    for section in source:
+        if section not in dest:
+            dest.add_section(section)
+            sections += 1
+        for key in source[section]:
+            dest[section][key] = source[section][key]
+            key_values += 1
+
+    with open(output_file, "wb") as fp:
+        dest.write_encrypted(fp)
+
+    if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
+        print(f"Transfered {sections} sections and {key_values} key-value pairs.")
+
+
 def main(argv):
     args = get_args(argv)
-    config = get_config(args)
-    section = args.section if args.section else 'DEFAULT'
-    if not args.file:
-        raise ValueError("Required parameter missing: --file (-f)")
-    if args.key:
-        if args.write:
-            write_key_value(config, args.file, section, args.key, args.write)
-        else:
-            read_key_value(config, args.file, section, args.key)
+    if args.import_file and args.file:
+        if args.import_file == args.file:
+            raise ValueError(f"Import and output filenames cannot be the same!")
+        elif not(os.path.exists(args.import_file) and not os.path.exists(args.file)):
+            raise ValueError(f"Import file must exist, and output file must not exist!")
+        encrypt_config_file(args.import_file, args.file)
     else:
-        raise ValueError("Required parameter missing: --key (-k)")
+        config = get_config(args.file)
+        section = args.section if args.section else 'DEFAULT'
+        if not args.file:
+            raise ValueError("Required parameter missing: --file (-f)")
+        if args.key:
+            if args.write:
+                write_key_value(config, args.file, section, args.key, args.write)
+            else:
+                read_key_value(config, args.file, section, args.key)
+        else:
+            raise ValueError("Required parameter missing: --key (-k)")
 
 
 if __name__ == "__main__":
