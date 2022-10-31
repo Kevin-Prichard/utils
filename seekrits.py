@@ -15,6 +15,7 @@ def get_args(argv: List[str]) -> Namespace:
                             description = 'Secrets reader & writer')
     parser.add_argument('--file', '-f', dest='file', type=str, action='store')
     parser.add_argument('--import', '-i', dest='import_file', type=str, action='store')
+    parser.add_argument('--export', '-x', dest='export_file', type=str, action='store')
     parser.add_argument('--section', '-s', dest='section', type=str, action='store', default='DEFAULT')
     parser.add_argument('--key', '-k', dest='key', action='store', type=str)
     parser.add_argument('--write', '-w', dest='write', action='store', type=str, nargs='?')
@@ -30,16 +31,17 @@ def get_config(source_file) -> ConfigParserCrypt:
     passphrase = None
     if not os.path.isfile(source_file):
         passphrase = config.generate_key()
-        import pudb; pu.db
         print(f"Passphrase for new config file: '{base64.standard_b64encode(passphrase)}'.  "
               "Copy the passphrase, then use 'reset' to clear the terminal.")
         config.aes_key = passphrase
 
     if not passphrase:
         if sys.stdin.isatty():
+            # If script is executing in a terminal, display a user prompt
             passph = getpass.getpass("Passphrase: ")
             passphrase = base64.standard_b64decode(passph)
         else:
+            # Otherwise, script is running in a pipe, tf no user prompt
             passph = sys.stdin.readline().rstrip()
             passphrase = base64.standard_b64decode(passph)
         config.aes_key = passphrase
@@ -95,6 +97,12 @@ def encrypt_config_file(import_file, output_file):
         print(f"Transfered {sections} sections and {key_values} key-value pairs.")
 
 
+def decrypt_config_file(source_file, export_file):
+    source = get_config(source_file)
+    with open(export_file, "w") as fp:
+        source.write(fp, space_around_delimiters=False)
+
+
 def main(argv):
     args = get_args(argv)
     if args.import_file and args.file:
@@ -103,6 +111,12 @@ def main(argv):
         elif not(os.path.exists(args.import_file) and not os.path.exists(args.file)):
             raise ValueError(f"Import file must exist, and output file must not exist!")
         encrypt_config_file(args.import_file, args.file)
+    if args.file and args.export_file:
+        if args.file == args.export_file:
+            raise ValueError(f"Source and export filenames cannot be the same!")
+        elif not(os.path.exists(args.file) and (args.export_file.startswith("/dev/") or not os.path.exists(args.export_file))):
+            raise ValueError(f"Source file must exist, and export file must not exist!")
+        decrypt_config_file(args.file, args.export_file)
     else:
         config = get_config(args.file)
         section = args.section if args.section else 'DEFAULT'
