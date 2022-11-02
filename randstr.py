@@ -58,8 +58,7 @@ def gen_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
     return "".join(pw)
 
 
-if __name__ == "__main__":
-    args = get_args(sys.argv)
+def get_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
     charset: List
     match args.charset:
         case 2:
@@ -75,4 +74,11 @@ if __name__ == "__main__":
     r = gen_randstr(args.word_len, charset, args.seed_times)
     if args.hex_encode:
         r = "".join(hex(ord(c))[2:] for c in r)
-    print(r)
+    return r
+
+
+if __name__ == "__main__":
+    args = get_args(sys.argv)
+    rand_str = get_randstr(
+        args.charset, args.word_len, args.hex_encode, args.seed_times)
+    print(rand_str)
