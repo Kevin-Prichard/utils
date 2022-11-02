@@ -38,9 +38,9 @@ def gen_phrase(word_count, min_len, max_len, seed, sep):
         words = F.readlines()
 
     pw = []
+    for i in range(int(seed)):
+        _ = randint(0, len(words))
     while len(pw) < word_count:
-        for i in range(int(seed)):
-            _ = randint(0, len(words))
         word = words[randint(0, len(words))].strip()
         word_len = len(word)
         if (min_len <= word_len <= max_len and " " not in
