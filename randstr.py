@@ -45,9 +45,9 @@ def gen_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
 
     pw = []
 
+    for i in range(seed_times):
+        seed(randint(1, 2 ** 63 - 1))
     while len(pw) < word_len:
-        for i in range(seed_times):
-            seed(randint(1, 2**63-1))
         if raw:
             pw.append(int(random() * alph_len))
         else:
@@ -78,7 +78,7 @@ def get_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
 
 
 if __name__ == "__main__":
-    args = get_args(sys.argv)
+    args = get_args(sys.argv[1:])
     rand_str = get_randstr(
         args.charset, args.word_len, args.hex_encode, args.seed_times)
     print(rand_str)
