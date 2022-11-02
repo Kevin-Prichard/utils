@@ -5,8 +5,6 @@ from random import randint
 import sys
 from typing import Tuple, List
 
-from common import check_args_exist
-
 
 def get_args(args: List[str]) -> Tuple[Namespace, List]:
     parser = ArgumentParser(
@@ -48,6 +46,18 @@ def gen_phrase(word_count, min_len, max_len, seed, sep):
             pw.append(word.strip())
 
     return sep.join(pw)
+
+
+def check_args_exist(args, actions, required_args):
+    options = {action.dest: action.option_strings[0]
+               for action in actions}
+
+    errors = []
+    for arg_name in required_args:
+        if not args.__dict__[arg_name]:
+            errors.append(options[arg_name])
+    if errors:
+        raise ValueError(f"Missing required parameters: {', '.join(errors)}")
 
 
 def main(argv):
