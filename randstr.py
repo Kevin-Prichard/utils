@@ -60,7 +60,7 @@ def make_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
 
 def gen_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
     charset: List
-    match args.charset:
+    match charset_num:
         case 2:
             # Printable ASCII: 0x20-0x7E
             charset = charset2
@@ -71,8 +71,8 @@ def gen_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
             # Base 64: alphanum + [_-]
             charset = charset1
 
-    r = make_randstr(args.word_len, charset, args.seed_times)
-    if args.hex_encode:
+    r = make_randstr(word_len, charset, seed_times)
+    if hex_encode:
         r = "".join(hex(ord(c))[2:] for c in r)
     return r
 
