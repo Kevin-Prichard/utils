@@ -39,7 +39,7 @@ def get_args(argv):
     return parser.parse_args(argv)
 
 
-def gen_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
+def make_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
     base_digits = [chr(c) for s in charset for c in range(s[0], s[1])]
     alph_len = len(base_digits)
 
@@ -58,7 +58,7 @@ def gen_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
     return "".join(pw)
 
 
-def get_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
+def gen_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
     charset: List
     match args.charset:
         case 2:
@@ -71,7 +71,7 @@ def get_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
             # Base 64: alphanum + [_-]
             charset = charset1
 
-    r = gen_randstr(args.word_len, charset, args.seed_times)
+    r = make_randstr(args.word_len, charset, args.seed_times)
     if args.hex_encode:
         r = "".join(hex(ord(c))[2:] for c in r)
     return r
@@ -79,6 +79,6 @@ def get_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
 
 if __name__ == "__main__":
     args = get_args(sys.argv[1:])
-    rand_str = get_randstr(
+    rand_str = gen_randstr(
         args.charset, args.word_len, args.hex_encode, args.seed_times)
     print(rand_str)
