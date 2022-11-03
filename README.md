@@ -1,7 +1,7 @@
 # Personal Utilities
 
 ## Intro
-These are utils I use every day, or every few days.  I wanted to keep them in a central place, to share among machines.  Overlays onto my personal machines' ~/bin directory, though not everything there is present.
+Daily utils in a central location. This repo overlays onto my personal machines' ~/bin.
 
 ## Overview of scripts
 

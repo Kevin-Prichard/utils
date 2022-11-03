@@ -5,15 +5,16 @@ import base64
 import getpass
 import os
 import sys
-from typing import List
+from typing import List, Tuple
 
 from configparser_crypt import ConfigParserCrypt
 
 
-USAGE_NOTES = """NOTE: in all cases where --file exists on filesystem, the script expects a
-      32-byte AES passphrase that is encoded with the base64.standard_b64encode charset.
+USAGE_NOTES = """
+NOTE: in all cases where --file exists on filesystem, the script expects a
+32-byte AES passphrase that is encoded with the base64.standard_b64encode charset.
 
-      For a new --file, a random key is generated and sent to /dev/stdout
+For a new --file, a random key is generated and sent to /dev/stdout
 
 Common use patterns:
 
@@ -31,7 +32,7 @@ Common use patterns:
 """
 
 
-def get_args(argv: List[str]) -> Namespace:
+def get_args(argv: List[str]) -> Tuple[Namespace, ArgumentParser]:
     parser = ArgumentParser(prog='Seekrits',
                             description = 'Secrets config file reader & writer')
     parser.add_argument('--file', '-f', dest='file', type=str, action='store')
@@ -41,7 +42,7 @@ def get_args(argv: List[str]) -> Namespace:
     parser.add_argument('--key', '-k', dest='key', action='store', type=str)
     parser.add_argument('--write', '-w', dest='write', action='store', type=str, nargs='?')
     parser.add_argument('--use', '-u', dest='usage', action='store', const=1, nargs='?')
-    return parser.parse_args(argv)
+    return parser.parse_args(argv), parser
 
 
 def read_section_key(conf: ConfigParserCrypt, key: str):
@@ -126,8 +127,9 @@ def decrypt_config_file(source_file, export_file):
 
 
 def main(argv):
-    args = get_args(argv)
-    if args.usage:
+    args, parser = get_args(argv)
+    if args.usage or len(argv) < 4:
+        parser.print_help()
         sys.stderr.write(USAGE_NOTES)
         exit(1)
 
