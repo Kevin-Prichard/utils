@@ -1,3 +1,4 @@
 configparser-crypt==0.6.2
 primePy
 pudb
+PyPDF2

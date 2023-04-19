@@ -2,10 +2,10 @@
 
 # Occasionally, packets appear on the Comcast router's interface
 # which have no simple explanation. Once, I spotted a port scan
-# os IPs under 73.0.0.1/8, with a source address linked to a
-# known security researcher. At other times, packets originating
-# from within Comcast's assigned IPs appear, usually on well-known
-# ports like 21, 23, 23, 80, 443, 137, 138, 139, 445.
+# of IPs within 73.0.0.1/8, and having a source address linked to a
+# well-known security researcher. At other times, packets originating
+# from within Comcast's assigned IPs appear, usually on well-known ports
+# like 21, 23, 23, 80, 443, 137, 138, 139, 445 -possibly from zombie bots.
 
 SELF_IP=$1
 SELF_DEV=$2 || "enx8cae4cfee880"
