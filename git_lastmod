@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+while read file; do
+  echo $(git log --pretty=format:%ad -n 1 --date=format:%Y%m%d%H%M%S -- $file) $file
+done < <(git ls-tree -r --name-only HEAD) | sort -k1,1n
