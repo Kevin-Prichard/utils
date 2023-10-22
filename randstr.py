@@ -7,20 +7,35 @@ from typing import List
 
 
 # Typical base 64 charset: most password filters accept
-charset1 = [
+char_range_base64 = [
     (45, 46),   # hy-phen
     (48, 58),   # 0-9
-    (64, 91),   # A-Z
+    (65, 91),   # A-Z
     (95, 96),   # under_score
     (97, 123),  # a-z
 ]
 
 # all printable characters: some password filters don't accept (eg aliexpress)
-charset2 = [
+char_range_ascii = [
     (32, 127),  # space thru tilde
 ]
 
-charset3 = [(0, 256)]
+char_range_byte = [(0, 256)]
+
+
+def make_charset(charset_ranges):
+    return [chr(char) for subset in charset_ranges
+            for char in range(subset[0], subset[1])]
+
+
+CHARSET_BASE64 = make_charset(char_range_base64)
+CHARSET_ASCII = make_charset(char_range_ascii)
+CHARSET_BYTE = make_charset(char_range_byte)
+CHARSETS={
+    "BASE64": CHARSET_BASE64,
+    "ASCII": CHARSET_ASCII,
+    "BYTE": CHARSET_BYTE,
+}
 
 
 def get_args(argv):
@@ -39,8 +54,7 @@ def get_args(argv):
     return parser.parse_args(argv)
 
 
-def make_randstr(word_len: int, charset: list, seed_times, raw: bool=False):
-    base_digits = [chr(c) for s in charset for c in range(s[0], s[1])]
+def make_randstr(word_len: int, base_digits: list, seed_times, raw: bool=False):
     alph_len = len(base_digits)
 
     pw = []
@@ -63,13 +77,13 @@ def gen_randstr(charset_num, word_len, hex_encode=0, seed_times=17):
     match charset_num:
         case 2:
             # Printable ASCII: 0x20-0x7E
-            charset = charset2
+            charset = CHARSET_ASCII
         case 3:
             # Bytes: 0-255
-            charset = charset3
+            charset = CHARSET_BYTE
         case _:
             # Base 64: alphanum + [_-]
-            charset = charset1
+            charset = CHARSET_BASE64
 
     r = make_randstr(word_len, charset, seed_times)
     if hex_encode:
