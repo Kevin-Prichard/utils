@@ -5,9 +5,12 @@ import os
 import re
 import struct
 import sys
+from statistics import stdev
 from typing import Tuple, List, Generator
 
 from randstr import CHARSETS
+
+# import wn
 
 
 DICT_ROOT_PATH = "/usr/share/dict/"
@@ -15,6 +18,23 @@ DICTIONARIES = ["american-english", "british-english", "cracklib-small"]
 
 # Used to skip words containing punctuation, like contractions, hyphenates
 CLEAN_WORD_RX = re.compile(r"^[a-z0-9]+$", re.I)
+
+
+wordset, words, words_len = None, None, None
+
+
+def init_words():
+    global wordset, words, words_len
+    if wordset is not None:
+        return
+
+    wordset = set()
+    for dictionary in DICTIONARIES:
+        with open(os.path.join(DICT_ROOT_PATH, dictionary), "r") as F:
+            wordset.update(word.lower() for word in F.readlines())
+
+    words = list(wordset)
+    words_len = len(words)
 
 
 def get_args(args: List[str]) -> Tuple[Namespace, List]:
@@ -27,7 +47,7 @@ def get_args(args: List[str]) -> Tuple[Namespace, List]:
         default=4, help="Number of random words")
     parser.add_argument(
         '--min-len', '-n', dest='min_len', type=int, action='store',
-        default=8, help="Minimum word length")
+        default=3, help="Minimum word length")
     parser.add_argument(
         '--max-len', '-x', dest='max_len', type=int, action='store',
         default=14, help="Maximum word length")
@@ -39,6 +59,11 @@ def get_args(args: List[str]) -> Tuple[Namespace, List]:
         default=0.0, help="Spoil the spelling to increase randomisity"
     )
     parser.add_argument(
+        '--overall-max', '-m', dest='overall_max_len', type=int,
+        action='store', default=128,
+        help="Overall maximum length of generated phrase"
+    )
+    parser.add_argument(
         '--spoil-charset', '-p', dest='spoil_charset', type=str, action='store',
         default='BASE64', help="Charset with which to do the spoiling"
     )
@@ -46,7 +71,7 @@ def get_args(args: List[str]) -> Tuple[Namespace, List]:
     return parser.parse_args(args), parser._actions
 
 
-def rand_i32(upper_bound) -> Generator[int, None, int]:
+def rand_i32(upper_bound: int) -> Generator[int, None, int]:
     # returns random integer in the range: 0 .. upper_bound - 1
     with open("/dev/random", "rb") as rand_raw:  # ash
         while True:
@@ -66,7 +91,7 @@ def spoil(s, spoiling, charset):
     return "".join(word)
 
 
-def gen_phrase(word_count, min_len, max_len, sep, spoiling, charset):
+def gen_phrase(word_count, min_len, max_len, sep, spoiling, charset, overall):
     # load all dictionaries  TODO let's parameterise dictionaries
     wordset = set()
     for dictionary in DICTIONARIES:
@@ -74,20 +99,38 @@ def gen_phrase(word_count, min_len, max_len, sep, spoiling, charset):
             wordset.update(word.lower() for word in F.readlines())
 
     words = list(wordset)
+    words_len = len(words)
+    print(f"Average word length: "
+          f"{sum(len(word) for word in words) / words_len:.1f}, "
+          f"stdev: "
+          f"{stdev(len(word) for word in words)}")
 
+    # construct an n-word phrase (n = word_count)
     pw = []
-    while len(pw) < word_count:
+    attempts = 0
+    while True:
         # get random word
-        word = words[next(rand_i32(len(words)))].strip()
+        word = words[next(rand_i32(words_len))].strip()
         # add if word within length range desired and not a contraction?
         word_len = len(word)
         if (min_len <= word_len <= max_len
             and CLEAN_WORD_RX.match(word)
             and word not in pw):
             pw.append(spoil(word.strip(), spoiling, charset=charset))
+        candidate = sep.join(pw)
+        if len(pw) == word_count:
+            if len(candidate) <= overall:
+                break
+            else:
+                if attempts / 10000 == int(attempts / 10000):
+                    print(f"Attempts: {attempts}, {len(pw)}, {len(candidate)}, {candidate}")
+            pw.clear()
+        attempts += 1
+        if attempts >= 1e6:
+            raise Exception("Too many attempts")
 
     # return phrase
-    return sep.join(pw)
+    return candidate
 
 
 def check_args_exist(args, actions, required_args):
@@ -113,7 +156,9 @@ def main(argv):
         max_len=args.max_len,
         sep=args.sep,
         spoiling=args.spoiling,
-        charset=spoil_charset)
+        charset=spoil_charset,
+        overall=args.overall_max_len,
+    )
     print(rand_phrase)
 
 

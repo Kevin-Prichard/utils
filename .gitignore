@@ -4,3 +4,7 @@
 .idea
 __pycache__
 *.pyc
+qna
+venv*
+time-until-70
+node_modules

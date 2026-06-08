@@ -1,4 +1,7 @@
 configparser-crypt==0.6.2
+filedate
 primePy
 pudb
 PyPDF2
+regex
+wn

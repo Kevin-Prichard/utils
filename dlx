@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+cat|xargs -tn 1 yt-dlp --write-info-json --proxy=socks5://localhost:9150 # -f 'bv[filesize<=250M][height<=1080]'
