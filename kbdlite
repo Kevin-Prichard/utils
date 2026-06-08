@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+LEVEL=$1 || 1
+sudo sh -c "echo $LEVEL > /sys/class/leds/tpacpi\:\:kbd_backlight/brightness"
+
